@@ -2,6 +2,9 @@
 
 #include <string>
 #include <atomic>
+#include <mutex>
+#include <vector>
+#include <functional>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 
@@ -13,6 +16,10 @@ public:
     static void add_decoded_char(char c);
     static void update_metrics(float wpm, float snr);
 
+    // Callback for live parameter changes (tone freq, device, etc.)
+    using ConfigChangeCallback = std::function<void(const std::string& key, const std::string& value)>;
+    static void set_config_change_callback(ConfigChangeCallback cb);
+
 private:
     ftxui::ScreenInteractive screen_;
     
@@ -21,4 +28,5 @@ private:
     static float current_wpm_;
     static float current_snr_;
     static std::mutex tui_mutex_;
+    static ConfigChangeCallback config_change_cb_;
 };
