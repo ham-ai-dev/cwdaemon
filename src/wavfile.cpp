@@ -48,6 +48,8 @@ bool WavFile::load(const std::string& path) {
         return false;
     }
 
+    sample_rate_ = header.sample_rate;
+
     int num_samples = header.data_bytes / 2;
     std::vector<int16_t> int_data(num_samples);
     file.read(reinterpret_cast<char*>(int_data.data()), header.data_bytes);
@@ -69,4 +71,16 @@ void WavFile::play(int sample_rate) {
         // Throttle to real-time (approximate for testing)
         std::this_thread::sleep_for(sample_duration);
     }
+    done_ = true;
+}
+
+void WavFile::play_fast() {
+    // Feed samples as fast as the ring buffer allows — no real-time throttle
+    // Used for benchmarks where we want results immediately
+    for (float sample : audio_data_) {
+        while (!ring_buffer_->push(sample)) {
+            std::this_thread::sleep_for(std::chrono::microseconds(10));
+        }
+    }
+    done_ = true;
 }

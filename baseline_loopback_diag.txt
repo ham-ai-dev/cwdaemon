@@ -1,0 +1,8 @@
+WAV: 48000 Hz, 1 ch, 16 bit, 60 sec
+Loaded 2880000 samples
+Tone freq: 800 Hz, initial WPM: 18
+Decoded 88 characters
+Final WPM: 13
+Final metric: 46.0612
+AGC peak: 0.0126432
+Noise floor: 0.000676547
