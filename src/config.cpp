@@ -28,6 +28,7 @@ void ConfigManager::load(const std::string& path) {
         config_.agc_decay = tbl["dsp"]["agc_decay"].value_or(10);
         config_.wpm_min = tbl["dsp"]["wpm_min"].value_or(5);
         config_.wpm_max = tbl["dsp"]["wpm_max"].value_or(50);
+        config_.afc_enabled = tbl["dsp"]["afc_enabled"].value_or(true);
 
         config_.api_port = tbl["api"]["port"].value_or(8080);
         config_.log_level = tbl["api"]["log_level"].value_or("info");
@@ -52,7 +53,8 @@ void ConfigManager::save() {
             { "tone_frequency", config_.tone_frequency },
             { "agc_decay", config_.agc_decay },
             { "wpm_min", config_.wpm_min },
-            { "wpm_max", config_.wpm_max }
+            { "wpm_max", config_.wpm_max },
+            { "afc_enabled", config_.afc_enabled }
         }},
         { "api", toml::table{
             { "port", config_.api_port },

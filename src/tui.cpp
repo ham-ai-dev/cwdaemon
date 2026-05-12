@@ -13,6 +13,8 @@ using namespace ftxui;
 std::string Tui::decoded_text_ = "";
 float Tui::current_wpm_ = 0.0f;
 float Tui::current_snr_ = 0.0f;
+int Tui::detected_freq_ = 0;
+float Tui::afc_confidence_ = 0.0f;
 std::mutex Tui::tui_mutex_;
 Tui::ConfigChangeCallback Tui::config_change_cb_;
 
@@ -26,10 +28,12 @@ void Tui::add_decoded_char(char c) {
     }
 }
 
-void Tui::update_metrics(float wpm, float snr) {
+void Tui::update_metrics(float wpm, float snr, int detected_freq, float afc_confidence) {
     std::lock_guard<std::mutex> lock(tui_mutex_);
     current_wpm_ = wpm;
     current_snr_ = snr;
+    detected_freq_ = detected_freq;
+    afc_confidence_ = afc_confidence;
 }
 
 void Tui::set_config_change_callback(ConfigChangeCallback cb) {
@@ -103,12 +107,15 @@ void Tui::run() {
     auto wpm_min_input = Input(&wpm_min_str, "5");
     auto wpm_max_input = Input(&wpm_max_str, "50");
     auto agc_input = Input(&agc_decay_str, "10");
+    bool afc_enabled = config.afc_enabled;
+    auto afc_toggle = Checkbox("AFC (Auto Freq)", &afc_enabled);
 
     auto dsp_container = Container::Vertical({
         tone_input,
         wpm_min_input,
         wpm_max_input,
         agc_input,
+        afc_toggle,
     });
 
     // =====================================================================
@@ -159,6 +166,7 @@ void Tui::run() {
             config.wpm_min = std::stoi(wpm_min_str);
             config.wpm_max = std::stoi(wpm_max_str);
             config.agc_decay = std::stoi(agc_decay_str);
+            config.afc_enabled = afc_enabled;
             config.api_port = std::stoi(api_port_str);
             config.log_level = log_level_str;
             config.rigctl_enabled = rigctl_enabled;
@@ -230,6 +238,16 @@ void Tui::run() {
                         : (snr_pct > 0.2f) ? Color::Yellow
                         : Color::Red;
 
+        // AFC status string
+        std::string afc_str;
+        if (afc_enabled && detected_freq_ > 0) {
+            afc_str = " AFC:" + std::to_string(detected_freq_) + "Hz";
+        } else if (afc_enabled) {
+            afc_str = " AFC:scan";
+        } else {
+            afc_str = " AFC:off";
+        }
+
         auto metrics_bar = hbox({
             text(" WPM: ") | bold,
             text(std::to_string(static_cast<int>(current_wpm_))) | bold | color(Color::Cyan),
@@ -241,8 +259,10 @@ void Tui::run() {
             text(" Tone: ") | bold,
             text(tone_freq_str + " Hz") | color(Color::Yellow),
             separator(),
+            text(afc_str) | bold | color(afc_enabled ? Color::Green : Color::GrayDark),
+            separator(),
             text(" Dev: ") | bold,
-            text(config.audio_device.substr(0, 25)) | color(Color::Blue) | dim,
+            text(config.audio_device.substr(0, 20)) | color(Color::Blue) | dim,
             filler(),
             text(status_msg) | dim,
         }) | border;
@@ -269,6 +289,11 @@ void Tui::run() {
                     hbox({text("WPM Min:         ") | bold, wpm_min_input->Render() | size(WIDTH, EQUAL, 8)}),
                     hbox({text("WPM Max:         ") | bold, wpm_max_input->Render() | size(WIDTH, EQUAL, 8)}),
                     hbox({text("AGC Decay:       ") | bold, agc_input->Render() | size(WIDTH, EQUAL, 8)}),
+                    separator(),
+                    afc_toggle->Render(),
+                    (detected_freq_ > 0 && afc_enabled)
+                        ? hbox({text("Detected: ") | dim, text(std::to_string(detected_freq_) + " Hz") | bold | color(Color::Green)})
+                        : text("Detecting...") | dim,
                 });
                 break;
             }

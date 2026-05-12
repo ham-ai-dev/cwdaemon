@@ -230,3 +230,129 @@ private:
     EventCallback event_cb_;
     void* event_user_;
 };
+
+// =========================================================================
+// ToneDetector — automatic tone frequency detection
+//
+// Accumulates audio samples in a ring buffer. Periodically (every ~200ms)
+// runs the Goertzel algorithm at candidate frequencies across 200-2000 Hz
+// in 10 Hz steps. Returns the frequency with the highest magnitude if it
+// exceeds a confidence threshold relative to the noise floor.
+//
+// Implements hysteresis: the detected frequency must be stable for
+// multiple consecutive scans before it is accepted, preventing
+// rapid jumping between nearby frequencies.
+// =========================================================================
+class ToneDetector {
+public:
+    ToneDetector(int sample_rate, int initial_freq = 700)
+        : sample_rate_(sample_rate),
+          detected_freq_(initial_freq),
+          candidate_freq_(initial_freq),
+          candidate_count_(0),
+          sample_count_(0)
+    {
+        // Accumulate ~200ms of audio per scan
+        scan_size_ = sample_rate / 5;
+        buf_.resize(scan_size_, 0.0f);
+    }
+
+    // Feed one audio sample. Returns true when a new detection is available.
+    bool feed(float sample) {
+        buf_[sample_count_] = sample;
+        sample_count_++;
+
+        if (sample_count_ >= scan_size_) {
+            run_scan();
+            sample_count_ = 0;
+            return true;
+        }
+        return false;
+    }
+
+    // Get the currently detected tone frequency
+    int detected_frequency() const { return detected_freq_; }
+
+    // Get the peak magnitude from the last scan (confidence indicator)
+    float confidence() const { return confidence_; }
+
+private:
+    void run_scan() {
+        // Goertzel algorithm at each candidate frequency
+        int best_freq = 0;
+        float best_mag = 0.0f;
+        float total_power = 0.0f;
+        int num_bins = 0;
+
+        // Scan 200-2000 Hz in 10 Hz steps
+        for (int freq = 200; freq <= 2000; freq += 10) {
+            float mag = goertzel_mag(freq);
+            total_power += mag;
+            num_bins++;
+
+            if (mag > best_mag) {
+                best_mag = mag;
+                best_freq = freq;
+            }
+        }
+
+        float avg_power = total_power / num_bins;
+
+        // Confidence: how much the peak stands out above average
+        // A clean CW tone should have confidence > 3.0
+        confidence_ = (avg_power > 1e-10f) ? best_mag / avg_power : 0.0f;
+
+        // Only accept if confidence is high enough (tone stands out)
+        if (confidence_ < 2.5f) return;
+
+        // Fine-tune: scan ±25 Hz around peak in 5 Hz steps
+        for (int freq = best_freq - 25; freq <= best_freq + 25; freq += 5) {
+            if (freq < 200 || freq > 2000) continue;
+            float mag = goertzel_mag(freq);
+            if (mag > best_mag) {
+                best_mag = mag;
+                best_freq = freq;
+            }
+        }
+
+        // Hysteresis: require the same frequency (within ±20 Hz) for
+        // 3 consecutive scans before accepting
+        if (std::abs(best_freq - candidate_freq_) <= 20) {
+            candidate_count_++;
+        } else {
+            candidate_freq_ = best_freq;
+            candidate_count_ = 1;
+        }
+
+        if (candidate_count_ >= 3) {
+            detected_freq_ = candidate_freq_;
+        }
+    }
+
+    float goertzel_mag(int freq) const {
+        // Goertzel algorithm — O(N) single-frequency DFT
+        float k = static_cast<float>(freq) * scan_size_ / sample_rate_;
+        float w = 2.0f * M_PI * k / scan_size_;
+        float coeff = 2.0f * std::cos(w);
+        float s0 = 0.0f, s1 = 0.0f, s2 = 0.0f;
+
+        for (int i = 0; i < scan_size_; i++) {
+            s0 = buf_[i] + coeff * s1 - s2;
+            s2 = s1;
+            s1 = s0;
+        }
+
+        float real = s1 - s2 * std::cos(w);
+        float imag = s2 * std::sin(w);
+        return std::sqrt(real * real + imag * imag) / scan_size_;
+    }
+
+    int sample_rate_;
+    int scan_size_;
+    int detected_freq_;
+    int candidate_freq_;
+    int candidate_count_;
+    int sample_count_;
+    float confidence_ = 0.0f;
+    std::vector<float> buf_;
+};

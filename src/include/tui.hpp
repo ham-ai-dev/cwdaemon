@@ -14,7 +14,8 @@ public:
     void run();
 
     static void add_decoded_char(char c);
-    static void update_metrics(float wpm, float snr);
+    static void update_metrics(float wpm, float snr,
+                               int detected_freq = 0, float afc_confidence = 0.0f);
 
     // Callback for live parameter changes (tone freq, device, etc.)
     using ConfigChangeCallback = std::function<void(const std::string& key, const std::string& value)>;
@@ -27,6 +28,8 @@ private:
     static std::string decoded_text_;
     static float current_wpm_;
     static float current_snr_;
+    static int detected_freq_;
+    static float afc_confidence_;
     static std::mutex tui_mutex_;
     static ConfigChangeCallback config_change_cb_;
 };

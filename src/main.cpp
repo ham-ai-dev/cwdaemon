@@ -144,13 +144,33 @@ int main(int argc, char** argv) {
     // =====================================================================
     // Decoder thread — consumes audio from ring buffer
     // fldigi: rx_process → rx_FFTprocess → decode_stream
+    // Also runs ToneDetector for AFC (auto frequency control)
     // =====================================================================
     std::thread decoder_thread([&]() {
         int metric_ctr = 0;
+
+        // AFC: auto tone detection
+        ToneDetector tone_detector(dsp_sample_rate, config.tone_frequency);
+        int current_tone = config.tone_frequency;
+
         while (global_running) {
             auto sample_opt = ring_buffer->pop();
             if (sample_opt) {
-                dsp.process_sample(static_cast<double>(*sample_opt));
+                float sample = *sample_opt;
+                dsp.process_sample(static_cast<double>(sample));
+
+                // Feed AFC tone detector
+                if (config.afc_enabled && tone_detector.feed(sample)) {
+                    int detected = tone_detector.detected_frequency();
+                    float conf = tone_detector.confidence();
+
+                    // Only retune if confidence is high and frequency shifted
+                    // by more than 15 Hz (avoid jitter on stable signals)
+                    if (conf > 2.5f && std::abs(detected - current_tone) > 15) {
+                        current_tone = detected;
+                        dsp.set_frequency(static_cast<double>(detected));
+                    }
+                }
 
                 // Update metrics periodically (~0.5s)
                 if (++metric_ctr > dsp_sample_rate / 2) {
@@ -159,11 +179,12 @@ int main(int argc, char** argv) {
 
                     ApiServer::current_wpm = wpm;
                     ApiServer::current_snr = snr;
-                    ApiServer::current_freq = config.tone_frequency;
+                    ApiServer::current_freq = current_tone;
                     
-                    ApiServer::broadcast_metrics(snr, wpm, config.tone_frequency,
+                    ApiServer::broadcast_metrics(snr, wpm, current_tone,
                                                  static_cast<float>(dsp.get_agc_peak()));
-                    Tui::update_metrics(wpm, snr);
+                    Tui::update_metrics(wpm, snr, current_tone,
+                                       tone_detector.confidence());
                     metric_ctr = 0;
                 }
             } else {

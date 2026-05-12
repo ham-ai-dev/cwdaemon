@@ -13,6 +13,7 @@ struct Config {
     int agc_decay = 10;
     int wpm_min = 5;
     int wpm_max = 50;
+    bool afc_enabled = true;
     int api_port = 8080;
     std::string log_level = "info";
 
