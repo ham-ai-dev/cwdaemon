@@ -157,7 +157,7 @@ void Tui::run() {
         rigctl_container,
     }, &tab_selected);
 
-    auto save_btn = Button(" Save Config ", [&] {
+    auto save_btn = Button("Save", [&] {
         try {
             if (selected_device >= 0 && selected_device < (int)device_names.size())
                 config.audio_device = device_names[selected_device];
@@ -189,7 +189,7 @@ void Tui::run() {
         }
     });
 
-    auto apply_tone_btn = Button(" Apply Tone ", [&] {
+    auto apply_tone_btn = Button("Tone", [&] {
         try {
             config.tone_frequency = std::stoi(tone_freq_str);
             ConfigManager::instance().update_config(config);
@@ -201,12 +201,12 @@ void Tui::run() {
         }
     });
 
-    auto clear_btn = Button(" Clear Text ", [&] {
+    auto clear_btn = Button("Clear", [&] {
         std::lock_guard<std::mutex> lock(tui_mutex_);
         decoded_text_.clear();
     });
 
-    auto switch_dev_btn = Button(" ⚡ Switch Device ", [&] {
+    auto switch_dev_btn = Button("⚡Switch", [&] {
         if (selected_device >= 0 && selected_device < (int)device_names.size()) {
             std::string new_dev = device_names[selected_device];
             if (config_change_cb_) {
@@ -221,7 +221,7 @@ void Tui::run() {
         }
     });
 
-    auto refresh_dev_btn = Button(" ↻ Refresh ", [&] {
+    auto refresh_dev_btn = Button("↻Scan", [&] {
         device_names = AudioCapture::get_devices();
         device_labels.clear();
         selected_device = 0;
