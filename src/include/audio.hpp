@@ -4,6 +4,8 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <mutex>
+#include <atomic>
 #include "ringbuffer.hpp"
 
 class AudioCapture {
@@ -14,7 +16,15 @@ public:
     bool init(const std::string& device_name, int sample_rate, int buffer_size);
     bool start();
     bool stop();
-    
+
+    // Hot-swap: switch to a new audio device without restarting the application
+    // Returns true if the switch succeeded, false if it failed (stays on old device)
+    bool switch_device(const std::string& device_name);
+
+    // Get current device name and status
+    std::string get_device_name() const;
+    bool is_running() const { return is_running_.load(); }
+
     static std::vector<std::string> get_devices();
 
 private:
@@ -30,5 +40,6 @@ private:
     int sample_rate_;
     int buffer_size_;
     int channels_;
-    bool is_running_;
+    std::atomic<bool> is_running_;
+    mutable std::mutex device_mutex_;  // Protects device switching
 };

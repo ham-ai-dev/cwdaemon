@@ -382,6 +382,21 @@ int main(int argc, char** argv) {
                                 decoder.get_wpm(),
                                 static_cast<float>(dsp.get_metric()));
     } else if (tui_mode) {
+        // =================================================================
+        // Wire TUI config change callback for live parameter updates
+        // =================================================================
+        Tui::set_config_change_callback([&](const std::string& key, const std::string& value) {
+            if (key == "tone_frequency") {
+                try {
+                    int freq = std::stoi(value);
+                    dsp.set_frequency(static_cast<double>(freq));
+                    std::cerr << "DSP: tone frequency set to " << freq << " Hz" << std::endl;
+                } catch (...) {}
+            } else if (key == "audio_device" && audio) {
+                audio->switch_device(value);
+            }
+        });
+
         Tui tui;
         tui.run();
 

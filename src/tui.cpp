@@ -88,12 +88,13 @@ void Tui::run() {
     // Status message
     // =====================================================================
     std::string status_msg = "Ready";
+    std::string active_device = config.audio_device;
 
     // =====================================================================
     // Tab selection
     // =====================================================================
     int tab_selected = 0;
-    std::vector<std::string> tab_labels = {"Audio", "DSP", "API", "Rigctl"};
+    std::vector<std::string> tab_labels = {" Audio ", " DSP ", " API ", " Rigctl "};
 
     // =====================================================================
     // Build components — Audio tab
@@ -205,6 +206,37 @@ void Tui::run() {
         decoded_text_.clear();
     });
 
+    auto switch_dev_btn = Button(" ⚡ Switch Device ", [&] {
+        if (selected_device >= 0 && selected_device < (int)device_names.size()) {
+            std::string new_dev = device_names[selected_device];
+            if (config_change_cb_) {
+                config_change_cb_("audio_device", new_dev);
+                active_device = new_dev;
+                config.audio_device = new_dev;
+                ConfigManager::instance().update_config(config);
+                status_msg = "Switched to: " + new_dev.substr(0, 25);
+            } else {
+                status_msg = "No callback — restart required";
+            }
+        }
+    });
+
+    auto refresh_dev_btn = Button(" ↻ Refresh ", [&] {
+        device_names = AudioCapture::get_devices();
+        device_labels.clear();
+        selected_device = 0;
+        for (size_t i = 0; i < device_names.size(); i++) {
+            device_labels.push_back(device_names[i]);
+            if (device_names[i] == active_device) {
+                selected_device = static_cast<int>(i);
+            }
+        }
+        if (device_labels.empty()) {
+            device_labels.push_back("(no devices found)");
+        }
+        status_msg = "Devices refreshed (" + std::to_string(device_names.size()) + " found)";
+    });
+
     auto buttons = Container::Horizontal({
         save_btn,
         apply_tone_btn,
@@ -217,6 +249,8 @@ void Tui::run() {
     auto main_container = Container::Vertical({
         tab_toggle,
         tab_content,
+        switch_dev_btn,
+        refresh_dev_btn,
         buttons,
     });
 
@@ -272,14 +306,30 @@ void Tui::run() {
         switch (tab_selected) {
             case 0: { // Audio
                 auto dev_list = device_menu->Render() | vscroll_indicator | frame
-                    | size(HEIGHT, LESS_THAN, 12);
+                    | size(HEIGHT, LESS_THAN, 8);
+
+                // Active device indicator
+                std::string active_short = active_device;
+                if (active_short.length() > 28) active_short = active_short.substr(0, 28) + "…";
+                bool is_selected_active = (selected_device >= 0 && selected_device < (int)device_names.size()
+                    && device_names[selected_device] == active_device);
+
                 tab_body = vbox({
-                    text("Select Input Device:") | bold,
+                    hbox({text("● Active: ") | bold | color(Color::Green),
+                          text(active_short) | color(Color::Green)}),
                     separator(),
+                    text("Select Input Device:") | bold,
                     dev_list,
                     separator(),
-                    hbox({text("Sample Rate: "), text(sample_rate_str + " Hz") | dim}),
-                    hbox({text("Buffer Size: "), text(buffer_size_str) | dim}),
+                    hbox({
+                        switch_dev_btn->Render()
+                            | (is_selected_active ? dim : nothing),
+                        text(" "),
+                        refresh_dev_btn->Render(),
+                    }),
+                    separator(),
+                    hbox({text("Rate: "), text(sample_rate_str + " Hz") | dim,
+                          text("  Buf: "), text(buffer_size_str) | dim}),
                 });
                 break;
             }
