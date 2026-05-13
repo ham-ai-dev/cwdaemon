@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "description": "CW decoder regression test suite",
+  "bulletin": {
+    "source": "W1AW ARRL Propagation Forecast",
+    "code": "ARLP019",
+    "date": "2026-05-08",
+    "url": "https://www.arrl.org/w1awbulletinspropagationissue?issue=2026-05-08&code=ARLP019"
+  },
+  "ground_truth_file": "testdata/w1aw_arlp019.txt",
+  "samples": [
+    {
+      "id": "sample_1",
+      "wav": "baseline_sample_1.wav",
+      "expected": "baseline_sample_1_decode.txt",
+      "captured_at": "2026-05-12T20:18:05-04:00",
+      "duration_sec": 60,
+      "sample_rate": 48000,
+      "source": "SDR++ loopback (hw:10,1)",
+      "radio": "IC-705",
+      "frequency_mhz": 7.0475,
+      "tone_hz": 800,
+      "baseline_char_accuracy": 96.9,
+      "baseline_word_accuracy": 93.8,
+      "baseline_wpm": 16,
+      "baseline_snr": 42,
+      "baseline_edit_distance": 3
+    },
+    {
+      "id": "sample_2",
+      "wav": "baseline_sample_2.wav",
+      "expected": "baseline_sample_2_decode.txt",
+      "captured_at": "2026-05-12T20:19:05-04:00",
+      "duration_sec": 60,
+      "sample_rate": 48000,
+      "source": "SDR++ loopback (hw:10,1)",
+      "radio": "IC-705",
+      "frequency_mhz": 7.0475,
+      "tone_hz": 800,
+      "baseline_char_accuracy": 98.0,
+      "baseline_word_accuracy": 92.3,
+      "baseline_wpm": 16,
+      "baseline_snr": 50,
+      "baseline_edit_distance": 2
+    },
+    {
+      "id": "sample_3",
+      "wav": "baseline_sample_3.wav",
+      "expected": "baseline_sample_3_decode.txt",
+      "captured_at": "2026-05-12T20:20:05-04:00",
+      "duration_sec": 60,
+      "sample_rate": 48000,
+      "source": "SDR++ loopback (hw:10,1)",
+      "radio": "IC-705",
+      "frequency_mhz": 7.0475,
+      "tone_hz": 800,
+      "baseline_char_accuracy": 97.9,
+      "baseline_word_accuracy": 93.8,
+      "baseline_wpm": 16,
+      "baseline_snr": 40,
+      "baseline_edit_distance": 2
+    },
+    {
+      "id": "sample_4",
+      "wav": "baseline_sample_4.wav",
+      "expected": "baseline_sample_4_decode.txt",
+      "captured_at": "2026-05-12T20:21:05-04:00",
+      "duration_sec": 60,
+      "sample_rate": 48000,
+      "source": "SDR++ loopback (hw:10,1)",
+      "radio": "IC-705",
+      "frequency_mhz": 7.0475,
+      "tone_hz": 800,
+      "baseline_char_accuracy": 93.3,
+      "baseline_word_accuracy": 75.0,
+      "baseline_wpm": 16,
+      "baseline_snr": 48,
+      "baseline_edit_distance": 7
+    }
+  ]
+}

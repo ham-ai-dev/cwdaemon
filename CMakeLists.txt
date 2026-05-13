@@ -49,3 +49,13 @@ add_executable(cwdiag
     src/timing.cpp
 )
 target_include_directories(cwdiag PRIVATE src/include)
+
+# =========================================================================
+# Testing: run 'make test' or 'ctest' to execute the regression suite
+# =========================================================================
+enable_testing()
+add_test(
+    NAME regression_benchmarks
+    COMMAND ${CMAKE_SOURCE_DIR}/scripts/run_benchmarks.sh --threshold 85
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
