@@ -17,12 +17,42 @@ int Tui::detected_freq_ = 0;
 float Tui::afc_confidence_ = 0.0f;
 std::mutex Tui::tui_mutex_;
 Tui::ConfigChangeCallback Tui::config_change_cb_;
+double Tui::rig_frequency_ = 0.0;
+std::string Tui::rig_mode_ = "";
+
+// =========================================================================
+// Band mapper — frequency (Hz) to ham band name
+// =========================================================================
+static std::string freq_to_band(double freq_hz) {
+    double mhz = freq_hz / 1e6;
+    if (mhz >= 1.8 && mhz <= 2.0)   return "160m";
+    if (mhz >= 3.5 && mhz <= 4.0)   return "80m";
+    if (mhz >= 5.3 && mhz <= 5.4)   return "60m";
+    if (mhz >= 7.0 && mhz <= 7.3)   return "40m";
+    if (mhz >= 10.1 && mhz <= 10.15) return "30m";
+    if (mhz >= 14.0 && mhz <= 14.35) return "20m";
+    if (mhz >= 18.068 && mhz <= 18.168) return "17m";
+    if (mhz >= 21.0 && mhz <= 21.45) return "15m";
+    if (mhz >= 24.89 && mhz <= 24.99) return "12m";
+    if (mhz >= 28.0 && mhz <= 29.7) return "10m";
+    if (mhz >= 50.0 && mhz <= 54.0) return "6m";
+    if (mhz >= 144.0 && mhz <= 148.0) return "2m";
+    if (mhz >= 420.0 && mhz <= 450.0) return "70cm";
+    return "";
+}
+
+static std::string format_freq_mhz(double freq_hz) {
+    double mhz = freq_hz / 1e6;
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%.4f", mhz);
+    return std::string(buf);
+}
 
 Tui::Tui() : screen_(ScreenInteractive::Fullscreen()) {}
 
-void Tui::add_decoded_char(char c) {
+void Tui::add_decoded_char(const std::string& s) {
     std::lock_guard<std::mutex> lock(tui_mutex_);
-    decoded_text_ += c;
+    decoded_text_ += s;
     if (decoded_text_.length() > 2000) {
         decoded_text_ = decoded_text_.substr(decoded_text_.length() - 2000);
     }
@@ -34,6 +64,12 @@ void Tui::update_metrics(float wpm, float snr, int detected_freq, float afc_conf
     current_snr_ = snr;
     detected_freq_ = detected_freq;
     afc_confidence_ = afc_confidence;
+}
+
+void Tui::update_rig_info(double freq_hz, const std::string& mode) {
+    std::lock_guard<std::mutex> lock(tui_mutex_);
+    rig_frequency_ = freq_hz;
+    rig_mode_ = mode;
 }
 
 void Tui::set_config_change_callback(ConfigChangeCallback cb) {
@@ -287,16 +323,19 @@ void Tui::run() {
             text(std::to_string(static_cast<int>(current_wpm_))) | bold | color(Color::Cyan),
             separator(),
             text(" SNR: ") | bold,
-            gauge(snr_pct) | color(snr_color) | size(WIDTH, EQUAL, 20),
+            gauge(snr_pct) | color(snr_color) | size(WIDTH, EQUAL, 15),
             text(" " + std::to_string(static_cast<int>(current_snr_)) + " "),
-            separator(),
-            text(" Tone: ") | bold,
-            text(tone_freq_str + " Hz") | color(Color::Yellow),
             separator(),
             text(afc_str) | bold | color(afc_enabled ? Color::Green : Color::GrayDark),
             separator(),
-            text(" Dev: ") | bold,
-            text(config.audio_device.substr(0, 20)) | color(Color::Blue) | dim,
+            // Rig frequency and band
+            (rig_frequency_ > 0
+                ? hbox({
+                    text(" " + format_freq_mhz(rig_frequency_) + " ") | bold | color(Color::Magenta),
+                    text(freq_to_band(rig_frequency_)) | bold | color(Color::Yellow),
+                    text(" " + rig_mode_ + " ") | dim,
+                  })
+                : text(" No Rig ") | dim),
             filler(),
             text(status_msg) | dim,
         }) | border;

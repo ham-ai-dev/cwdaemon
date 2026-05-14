@@ -70,8 +70,8 @@ int main(int argc, char** argv) {
     CWDsp dsp(header.sample_rate, tone_freq, bandwidth, wpm);
 
     int char_count = 0;
-    TimingDecoder decoder(wpm, [&char_count](char c) {
-        std::cout << c << std::flush;
+    TimingDecoder decoder(wpm, [&char_count](const std::string& s) {
+        std::cout << s << std::flush;
         char_count++;
     });
 

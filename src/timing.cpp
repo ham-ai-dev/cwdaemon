@@ -11,21 +11,29 @@
 // =========================================================================
 // Morse code lookup table — fldigi: morse.cxx rx_lookup
 // =========================================================================
-static const std::map<std::string, char> morse_table = {
-    {".-", 'A'}, {"-...", 'B'}, {"-.-.", 'C'}, {"-..", 'D'}, {".", 'E'},
-    {"..-.", 'F'}, {"--.", 'G'}, {"....", 'H'}, {"..", 'I'}, {".---", 'J'},
-    {"-.-", 'K'}, {".-..", 'L'}, {"--", 'M'}, {"-.", 'N'}, {"---", 'O'},
-    {".--.", 'P'}, {"--.-", 'Q'}, {".-.", 'R'}, {"...", 'S'}, {"-", 'T'},
-    {"..-", 'U'}, {"...-", 'V'}, {".--", 'W'}, {"-..-", 'X'}, {"-.--", 'Y'},
-    {"--..", 'Z'},
-    {"-----", '0'}, {".----", '1'}, {"..---", '2'}, {"...--", '3'},
-    {"....-", '4'}, {".....", '5'}, {"-....", '6'}, {"--...", '7'},
-    {"---..", '8'}, {"----.", '9'},
-    {".-.-.-", '.'}, {"--..--", ','}, {"..--..", '?'}, {"-.-.--", '!'},
-    {"-....-", '-'}, {"-..-.", '/'}, {".--.-.", '@'}, {"-.--.", '('},
-    {"-.--.-", ')'}, {"---...", ':'}, {"-.-.-.", ';'}, {"-...-", '='},
-    {".-.-.", '+'}, {".-...", '&'}, {"..--.-", '_'}, {".-..-.", '"'},
-    {"...-..-", '$'}
+static const std::map<std::string, std::string> morse_table = {
+    {".-", "A"}, {"-...", "B"}, {"-.-.", "C"}, {"-..", "D"}, {".", "E"},
+    {"..-.", "F"}, {"--.", "G"}, {"....", "H"}, {"..", "I"}, {".---", "J"},
+    {"-.-", "K"}, {".-..", "L"}, {"--", "M"}, {"-.", "N"}, {"---", "O"},
+    {".--.", "P"}, {"--.-", "Q"}, {".-.", "R"}, {"...", "S"}, {"-", "T"},
+    {"..-", "U"}, {"...-", "V"}, {".--", "W"}, {"-..-", "X"}, {"-.--", "Y"},
+    {"--..", "Z"},
+    {"-----", "0"}, {".----", "1"}, {"..---", "2"}, {"...--", "3"},
+    {"....-", "4"}, {".....", "5"}, {"-....", "6"}, {"--...", "7"},
+    {"---..", "8"}, {"----.", "9"},
+    {".-.-.-", "."}, {"--..--", ","}, {"..--..", "?"}, {"-.-.--", "!"},
+    {"-....-", "-"}, {"-..-.", "/"}, {".--.-.", "@"}, {"-.--.", "("},
+    {"-.--.-", ")"}, {"---...", ":"}, {"-.-.-.", ";"}, {"-...-", "<BT>"},
+    {".-.-.", "<AR>"}, {".-...", "&"}, {"..--.-", "_"}, {".-..-.", "\""},
+    {"...-..-", "$"},
+    // =====================================================================
+    // CW Prosigns — sent as merged characters without inter-character space
+    // =====================================================================
+    {"...-.-", "<SK>"},      // End of contact
+    {"-.--." , "<KN>"},      // Go ahead, specific station only
+    {".-...", "<AS>"},       // Wait / stand by
+    {"...-.", "<SN>"},       // Understood / Verified
+    {"...---...", "<SOS>"}, // Distress
 };
 
 // =========================================================================
@@ -221,13 +229,13 @@ bool TimingDecoder::handle_event(int event, unsigned int smpl_ctr, std::string& 
             cw_receive_state_ == RS_AFTER_TONE) {
 
             // Look up the morse representation
-            char c = lookup_morse(rx_rep_buf_);
-            if (c != '\0') {
-                decoded = c;
-                on_char_(c);
+            std::string s = lookup_morse(rx_rep_buf_);
+            if (!s.empty()) {
+                decoded = s;
+                on_char_(s);
             } else {
-                decoded = '*';
-                on_char_('*');
+                decoded = "*";
+                on_char_("*");
             }
 
             rx_rep_buf_.clear();
@@ -238,8 +246,8 @@ bool TimingDecoder::handle_event(int event, unsigned int smpl_ctr, std::string& 
 
         // fldigi: cw.cxx:910-913 — LONG silence: word space
         if ((element_usec > (4 * cw_receive_dot_length_)) && !space_sent_) {
-            decoded = ' ';
-            on_char_(' ');
+            decoded = " ";
+            on_char_(" ");
             space_sent_ = true;
             return true;
         }
@@ -251,12 +259,12 @@ bool TimingDecoder::handle_event(int event, unsigned int smpl_ctr, std::string& 
 }
 
 // =========================================================================
-// lookup_morse — fldigi: morse.cxx rx_lookup
+// lookup_morse — returns decoded string (single char or prosign tag)
 // =========================================================================
-char TimingDecoder::lookup_morse(const std::string& repr) {
+std::string TimingDecoder::lookup_morse(const std::string& repr) {
     auto it = morse_table.find(repr);
     if (it != morse_table.end()) {
         return it->second;
     }
-    return '\0';
+    return "";
 }

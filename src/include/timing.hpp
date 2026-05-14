@@ -9,14 +9,14 @@
 #include <cstdint>
 #include "goertzel.hpp"  // for CW_SAMPLERATE, KWPM, DEC_RATIO, MovingAverage, CW_RX_STATE
 
-// fldigi: cw.h:45
-static constexpr int MAX_MORSE_ELEMENTS = 6;
+// fldigi: cw.h:45 — increased from 6 to 9 to support prosigns
+static constexpr int MAX_MORSE_ELEMENTS = 9;
 // fldigi: cw.h:70
 static constexpr int TRACKING_FILTER_SIZE = 16;
 
 class TimingDecoder {
 public:
-    using CharCallback = std::function<void(char)>;
+    using CharCallback = std::function<void(const std::string&)>;
 
     TimingDecoder(int initial_wpm, CharCallback callback);
 
@@ -40,8 +40,8 @@ private:
     void update_tracking(int dur_1, int dur_2);
     // fldigi: cw.cxx:466 sync_parameters()
     void sync_parameters();
-    // Morse lookup
-    char lookup_morse(const std::string& repr);
+    // Morse lookup — returns decoded string (supports prosigns)
+    std::string lookup_morse(const std::string& repr);
 
     // fldigi: cw.cxx:754 usec_diff (sample diff)
     int sample_diff(unsigned int earlier, unsigned int later) {

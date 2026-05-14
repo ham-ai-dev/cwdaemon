@@ -16,7 +16,7 @@ public:
     void stop();
 
     // Broadcast helpers for WebSockets
-    static void broadcast_decoded_char(char c);
+    static void broadcast_decoded_char(const std::string& s);
     static void broadcast_metrics(float snr, float wpm, float freq, float agc);
 
     // Global state pointers for endpoints

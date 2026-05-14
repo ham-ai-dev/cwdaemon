@@ -13,9 +13,10 @@ public:
     Tui();
     void run();
 
-    static void add_decoded_char(char c);
+    static void add_decoded_char(const std::string& s);
     static void update_metrics(float wpm, float snr,
                                int detected_freq = 0, float afc_confidence = 0.0f);
+    static void update_rig_info(double freq_hz, const std::string& mode);
 
     // Callback for live parameter changes (tone freq, device, etc.)
     using ConfigChangeCallback = std::function<void(const std::string& key, const std::string& value)>;
@@ -32,4 +33,6 @@ private:
     static float afc_confidence_;
     static std::mutex tui_mutex_;
     static ConfigChangeCallback config_change_cb_;
+    static double rig_frequency_;
+    static std::string rig_mode_;
 };

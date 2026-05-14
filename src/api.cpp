@@ -177,8 +177,7 @@ void ApiServer::stop() {
     is_running_ = false;
 }
 
-void ApiServer::broadcast_decoded_char(char c) {
-    std::string s(1, c);
+void ApiServer::broadcast_decoded_char(const std::string& s) {
     std::lock_guard<std::mutex> lock(ws_mutex);
     for (auto& client : decoded_clients) {
         client->send(s);

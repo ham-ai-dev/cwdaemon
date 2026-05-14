@@ -258,14 +258,14 @@ int main(int argc, char** argv) {
     std::string decoded_output;
     std::mutex decoded_mutex;
 
-    TimingDecoder decoder(initial_wpm, [&](char c) {
+    TimingDecoder decoder(initial_wpm, [&](const std::string& s) {
         if (benchmark_mode) {
             std::lock_guard<std::mutex> lk(decoded_mutex);
-            decoded_output += c;
+            decoded_output += s;
         } else {
-            ApiServer::broadcast_decoded_char(c);
-            Tui::add_decoded_char(c);
-            std::cout << c << std::flush;
+            ApiServer::broadcast_decoded_char(s);
+            Tui::add_decoded_char(s);
+            std::cout << s << std::flush;
         }
     });
 
@@ -347,6 +347,12 @@ int main(int argc, char** argv) {
                                                      static_cast<float>(dsp.get_agc_peak()));
                         Tui::update_metrics(wpm, snr, current_tone,
                                            tone_detector.confidence());
+
+                        // Feed rig frequency/band into TUI
+                        if (rigctl) {
+                            Tui::update_rig_info(rigctl->get_frequency(),
+                                                 rigctl->get_mode());
+                        }
                     }
                     metric_ctr = 0;
                 }
