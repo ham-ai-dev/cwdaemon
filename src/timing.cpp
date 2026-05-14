@@ -235,7 +235,6 @@ bool TimingDecoder::handle_event(int event, unsigned int smpl_ctr, std::string& 
                 decoded = s;
                 on_char_(s);
             } else {
-                std::cerr << "[?:" << rx_rep_buf_ << "] ";
                 decoded = "*";
                 on_char_("*");
             }
