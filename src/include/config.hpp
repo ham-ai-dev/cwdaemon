@@ -11,7 +11,7 @@ struct Config {
     int buffer_size = 512;
     int tone_frequency = 600;
     int agc_decay = 10;
-    int wpm_min = 5;
+    int wpm_min = 2;
     int wpm_max = 50;
     bool afc_enabled = true;
     int api_port = 8080;

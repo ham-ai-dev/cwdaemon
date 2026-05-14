@@ -35,6 +35,13 @@ public:
     float get_wpm() const { return cw_receive_speed_; }
     int get_two_dots() const { return two_dots_; }
 
+    // Set WPM tracking bounds (does not change initial WPM or bandwidth)
+    void set_wpm_bounds(int lower, int upper) {
+        wpm_lower_ = lower;
+        wpm_upper_ = upper;
+        sync_parameters();
+    }
+
 private:
     // fldigi: cw.cxx:524 update_tracking()
     void update_tracking(int dur_1, int dur_2);

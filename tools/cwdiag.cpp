@@ -75,7 +75,8 @@ int main(int argc, char** argv) {
         char_count++;
     });
 
-    // Share state
+    // Share state — set bounds to allow slow CW tracking
+    decoder.set_wpm_bounds(2, 50);
     dsp.set_rx_state_ptr(decoder.get_rx_state_ptr());
 
     struct State { TimingDecoder* dec; CWDsp* dsp; };

@@ -103,9 +103,10 @@ void TimingDecoder::sync_parameters() {
 // Uses MovingAverage(16) filter on the average of the pair.
 // =========================================================================
 void TimingDecoder::update_tracking(int dur_1, int dur_2) {
-    // fldigi: cw.cxx:526-527 — speed bounds
-    static int min_dot = KWPM / 200;     // ~48 samples (200 WPM limit)
-    static int max_dash = 3 * KWPM / 5;  // ~5760 samples (5 WPM limit)
+    // Use configurable WPM bounds instead of hardcoded 5/200 WPM
+    // (fldigi hardcodes these — we make them configurable to support slow CW)
+    int min_dot = KWPM / wpm_upper_;      // shortest valid dot at max WPM
+    int max_dash = 3 * KWPM / wpm_lower_; // longest valid dash at min WPM
 
     // fldigi: cw.cxx:528-531 — sanity checks
     if ((dur_1 > dur_2) && (dur_1 > 4 * dur_2)) return;

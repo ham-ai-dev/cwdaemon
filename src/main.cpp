@@ -275,6 +275,7 @@ int main(int argc, char** argv) {
     // same cw_receive_state member of the cw class. We replicate this by
     // giving the DSP a pointer to TimingDecoder's state variable.
     // =====================================================================
+    decoder.set_wpm_bounds(config.wpm_min, config.wpm_max);
     dsp.set_rx_state_ptr(decoder.get_rx_state_ptr());
 
     // Wire DSP events into the TimingDecoder
