@@ -235,6 +235,7 @@ bool TimingDecoder::handle_event(int event, unsigned int smpl_ctr, std::string& 
                 decoded = s;
                 on_char_(s);
             } else {
+                std::cerr << "[?:" << rx_rep_buf_ << "] ";
                 decoded = "*";
                 on_char_("*");
             }
@@ -261,11 +262,31 @@ bool TimingDecoder::handle_event(int event, unsigned int smpl_ctr, std::string& 
 
 // =========================================================================
 // lookup_morse — returns decoded string (single char or prosign tag)
+// Falls back to truncating trailing/leading noise elements if exact match fails,
+// which recovers common timing errors (e.g. .-.- → .-. = R, --.-. → --.- = Q)
 // =========================================================================
 std::string TimingDecoder::lookup_morse(const std::string& repr) {
+    // Exact match first
     auto it = morse_table.find(repr);
     if (it != morse_table.end()) {
         return it->second;
     }
+
+    if (repr.length() > 1) {
+        // Fallback 1: try removing last element (trailing noise)
+        std::string trunc_end = repr.substr(0, repr.length() - 1);
+        auto it2 = morse_table.find(trunc_end);
+        if (it2 != morse_table.end()) {
+            return it2->second;
+        }
+
+        // Fallback 2: try removing first element (leading noise)
+        std::string trunc_start = repr.substr(1);
+        auto it3 = morse_table.find(trunc_start);
+        if (it3 != morse_table.end()) {
+            return it3->second;
+        }
+    }
+
     return "";
 }
