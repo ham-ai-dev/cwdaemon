@@ -9,7 +9,7 @@ struct Config {
     std::string audio_device = "default";
     int sample_rate = 8000;
     int buffer_size = 512;
-    int tone_frequency = 600;
+    int tone_frequency = 700;
     int agc_decay = 10;
     int wpm_min = 2;
     int wpm_max = 50;
